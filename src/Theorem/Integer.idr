@@ -279,11 +279,9 @@ minusNatDifferenceRight m n p = Calc $
   ~~ difference n (m + p)
      ...( negateInvolutive ? )
 
-
 export
 minusZeroRight : (m : ZZ) -> m - 0 === m
 minusZeroRight = plusZeroRightNeutral
-
 
 export
 plusInverse : (m : ZZ) -> m - m === Z
@@ -391,3 +389,19 @@ plusAssociative (NS k) (NS j) (NS i) = cong (NS . S) $ Calc $
   |~ k + S (j + i)
   ~~ S (k + (j + i)) ...( sym (plusSuccRightSucc k (j + i)) )
   ~~ S ((k + j) + i) ...( cong S (plusAssociative k j i) )
+
+public export
+multZeroRightZero : (left : ZZ) -> left * 0 === 0
+multZeroRightZero Z = Refl
+multZeroRightZero (PS _) = Refl
+multZeroRightZero (NS _) = Refl
+
+public export
+multDistributesOverPlusLeft : (left : ZZ) -> (centre : ZZ) -> (right : ZZ) ->
+                              (left + centre) * right = (left * right) + (centre * right)
+multDistributesOverPlusLeft left center Z =
+  rewrite multZeroRightZero (left + center) in
+    rewrite multZeroRightZero left in
+      rewrite multZeroRightZero center in Refl
+multDistributesOverPlusLeft (PS left) (PS center) (PS right) =
+  cong PS ?what3

@@ -1,8 +1,8 @@
 module Theorem.Division
 
 import Data.Nat
+import Theorem.Nat
 import Theorem.Integer
-import Control.Function
 import Control.Relation
 import Decidable.Equality
 
@@ -40,7 +40,14 @@ data CommonFactor : ZZ -> ZZ -> ZZ -> Type where
   CommonFactorExists : Factor p a -> Factor p b -> CommonFactor p a b
 
 public export
-subsetFactorDivides : ((q : ZZ) -> Factor q a -> Factor q b) -> Factor a b
+commonFactorDivSum  : {d,a,b : _} -> CommonFactor d a b -> Factor d (a + b)
+commonFactorDivSum (CommonFactorExists factorA factorB) =
+  let
+    CofactorExists {k=p} prfA = factorA
+    CofactorExists {k=q} prfB = factorB
+    prfAB = the (mult d (a + b) = mult d (a + b)) Refl
+  in
+    ?what prfA prfB prfAB
 
 public export
 data GCD : Nat -> ZZ -> ZZ -> Type where
@@ -57,33 +64,8 @@ public export
 Uninhabited (Factor Z (NS n)) where
   uninhabited (CofactorExists prf) impossible
 
-lteAddLeft : {a,b,c : _} -> LTE (a + b) c -> LTE a c
-lteAddLeft {b=Z} eq =
-  replace {p=(\x => LTE x c)} (plusZeroRightNeutral a) eq
-lteAddLeft {b=(S n)} eq =
-  lteAddLeft
-  $ replace {p=(\x => LTE x c)} (plusCommutative n a)
-  $ lteSuccLeft
-  $ replace {p=(\x => LTE x c)} (plusCommutative a (S n)) eq
-
-plusLTE : {a,b,c : _} -> a + b = c -> LTE a c
-plusLTE eq = rewrite sym eq in lteAddRight {m=b} a
-
-multLTE : {n,m,k : _} -> LTE (mult n (S k)) m -> LTE n m
-multLTE eq = lteAddLeft $
-  replace {p=(\x => LTE x m)} (multRightSuccPlus n k) eq
-
-plusMultCleanup : {a,k : _} -> plus (mult a k) a = mult a (S k)
-plusMultCleanup =
-  rewrite plusCommutative (mult a k) a in
-    rewrite sym $ multRightSuccPlus a k in
-      Refl
-
-ltePlusMultCleanup : {a,b,k : _} -> LTE (plus (mult a k) a) b -> LTE (mult a (S k)) b
-ltePlusMultCleanup eq = replace {p = (\x => LTE x b)} plusMultCleanup eq
-
 reduceToLTE : {n,m,k : _} -> PS (plus (plus (mult n k) n) k) = PS m -> LTE n m
-reduceToLTE = multLTE . ltePlusMultCleanup . plusLTE . injective
+reduceToLTE = lteAddLeft' . plusEqToLTE . injective
 
 public export
 selfGCDMustBeSelf : {n,m :_} -> GCD (S n) (PS m) (PS m) -> n = m
@@ -99,10 +81,10 @@ public export
 Coprime : ZZ -> ZZ -> Type
 Coprime = GCD 1
 
-{-
-public export
-euclidLemma : (n, a, b: ZZ) -> Coprime n a -> Factor n (a * b) -> Factor n b
-euclidLemma n a b (MkGCD commonFactorPrf _) nDividesAB =
+euclidLemmaPositive : (n, a, b: Nat) -> Coprime (PS n) (PS a) -> Factor (PS n) (PS a * PS b) -> Factor (PS n) (PS b)
+euclidLemmaPositive n a b coprimePrf nDividesAB =
   case decEq n a of
-       Yes prf => rewrite sym prf in selfIsFactor
+       Yes prf =>
+          let nIsOne = selfGCDMustBeSelf $ replace {p = GCD 1 (PS n) . PS} (sym prf) coprimePrf
+          in rewrite sym nIsOne in oneIsFactor
        No prf => ?what1 prf
