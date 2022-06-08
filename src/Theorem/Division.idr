@@ -28,18 +28,15 @@ public export
 data CommonFactor : ZZ -> ZZ -> ZZ -> Type where
   CommonFactorExists : Factor p a -> Factor p b -> CommonFactor p a b
 
-{-
 public export
 commonFactorDivSum  : {d,a,b : _} -> CommonFactor d a b -> Factor d (a + b)
 commonFactorDivSum (CommonFactorExists factorA factorB) =
   let
     CofactorExists {k=p} prfA = factorA
     CofactorExists {k=q} prfB = factorB
-    prfAB = the (mult d (a + b) = mult d (a + b)) Refl
+    prfAB = cong2 (+) prfA prfB
   in
-    ?what prfA prfB prfAB
--}
-
+    CofactorExists $ trans (multDistributesOverPlusRightZ d p q) prfAB
 
 public export
 data GCD : Nat -> ZZ -> ZZ -> Type where
@@ -79,15 +76,17 @@ selfGCDMustBeSelf {n,m} gcd@(MkGCD cfPrf factorWit) =
       Z => absurd $ multNotZero m n (injective mFactorOfN)
     Z => absurd $ multNotZero n m (injective nFactorOfM)
 
-{-
 public export
 Coprime : ZZ -> ZZ -> Type
 Coprime = GCD 1
 
-euclidLemmaPositive : (n, a, b: Nat) -> Coprime (PS n) (PS a) -> Factor (PS n) (PS a * PS b) -> Factor (PS n) (PS b)
+euclidLemmaPositive : (n, a, b: Nat) ->
+                      Coprime (Pos $ S n) (Pos $ S a) ->
+                      Factor (Pos $ S n) ((Pos $ S a) * (Pos $ S b)) ->
+                      Factor (Pos $ S n) (Pos $ S b)
 euclidLemmaPositive n a b coprimePrf nDividesAB =
   case decEq n a of
        Yes prf =>
-          let nIsOne = selfGCDMustBeSelf $ replace {p = GCD 1 (PS n) . PS} (sym prf) coprimePrf
+          let nIsOne = selfGCDMustBeSelf $ replace {p = GCD 1 (Pos $ S n) . Pos . S} (sym prf) coprimePrf
           in rewrite sym nIsOne in oneIsFactor
        No prf => ?what1 prf
