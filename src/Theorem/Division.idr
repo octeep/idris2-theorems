@@ -2,18 +2,9 @@ module Theorem.Division
 
 import Data.Nat
 import Theorem.Nat
-import Theorem.Integer
+import Theorem.ZZ
 import Control.Relation
 import Decidable.Equality
-
-public export
-data NotZero : ZZ -> Type where
-  PIsNotZero : NotZero (PS x)
-  NIsNotZero : NotZero (NS x)
-
-public export
-NotBothZero : ZZ -> ZZ -> Type
-NotBothZero a b = Either (NotZero a) (NotZero b)
 
 public export
 data Factor : ZZ -> ZZ -> Type where
@@ -21,24 +12,23 @@ data Factor : ZZ -> ZZ -> Type where
 
 public export
 oneIsFactor : {n : ZZ} -> Factor 1 n
-oneIsFactor {n = PS m} = CofactorExists {k=PS m} Refl
-oneIsFactor {n = NS m} = CofactorExists {k=NS m} Refl
-oneIsFactor {n = Z} = CofactorExists {k=Z} Refl
+oneIsFactor {n} = CofactorExists $ multOneLeftNeutralZ n
 
 public export
 negOneIsFactor : {n : ZZ} -> Factor (-1) n
-negOneIsFactor {n = PS m} = CofactorExists {k=NS m} Refl
-negOneIsFactor {n = NS m} = CofactorExists {k=PS m} Refl
-negOneIsFactor {n = Z} = CofactorExists {k=Z} Refl
+negOneIsFactor {n} =
+  CofactorExists {k=(negate n), a=(-1)} $
+  rewrite multNegateCancelZ 1 n in multOneLeftNeutralZ n
 
 public export
 selfIsFactor : {n : ZZ} -> Factor n n
-selfIsFactor {n} = CofactorExists {a = n, k = 1} (multOneRightNetural n)
+selfIsFactor {n} = CofactorExists {a = n, k = 1} (multOneRightNeutralZ n)
 
 public export
 data CommonFactor : ZZ -> ZZ -> ZZ -> Type where
   CommonFactorExists : Factor p a -> Factor p b -> CommonFactor p a b
 
+{-
 public export
 commonFactorDivSum  : {d,a,b : _} -> CommonFactor d a b -> Factor d (a + b)
 commonFactorDivSum (CommonFactorExists factorA factorB) =
@@ -48,6 +38,8 @@ commonFactorDivSum (CommonFactorExists factorA factorB) =
     prfAB = the (mult d (a + b) = mult d (a + b)) Refl
   in
     ?what prfA prfB prfAB
+-}
+
 
 public export
 data GCD : Nat -> ZZ -> ZZ -> Type where
@@ -57,26 +49,37 @@ data GCD : Nat -> ZZ -> ZZ -> Type where
           GCD p a b
 
 public export
-Uninhabited (Factor Z (PS n)) where
+Uninhabited (Factor 0 (Pos (S n))) where
   uninhabited (CofactorExists prf) impossible
 
+{-
 public export
-Uninhabited (Factor Z (NS n)) where
-  uninhabited (CofactorExists prf) impossible
+Uninhabited (Factor 0 (NegS n)) where
+  uninhabited (CofactorExists prf) = ?ww prf
+  -}
 
-reduceToLTE : {n,m,k : _} -> PS (plus (plus (mult n k) n) k) = PS m -> LTE n m
-reduceToLTE = lteAddLeft' . plusEqToLTE . injective
+reduceToLTE : {n,m,k : _} -> Pos (S (plus k (mult n (S k)))) = Pos (S m) -> LTE n m
+reduceToLTE eq =
+  lteAddLeft
+  $ replace {p = (\x => LTE x m)} (multRightSuccPlus n k)
+  $ plusEqToLTE
+  $ the (plus (mult n (S k)) k = m)
+  $ rewrite plusCommutative (mult n (S k)) k in
+  injective $ injective eq
 
 public export
-selfGCDMustBeSelf : {n,m :_} -> GCD (S n) (PS m) (PS m) -> n = m
-selfGCDMustBeSelf {n,m} (MkGCD cfPrf factorWit) =
+selfGCDMustBeSelf : {n,m :_} -> GCD (S n) (Pos $ S m) (Pos $ S m) -> n = m
+selfGCDMustBeSelf {n,m} gcd@(MkGCD cfPrf factorWit) =
   let
-    CommonFactorExists (CofactorExists {k=PS k1} nFactorOfM) _ = cfPrf
-    CofactorExists {k=PS k2} mFactorOfN = factorWit (PS m) (CommonFactorExists selfIsFactor selfIsFactor)
-    prfA = reduceToLTE nFactorOfM
-    prfB = reduceToLTE mFactorOfN
-  in antisymmetric prfA prfB
+    CommonFactorExists (CofactorExists {k=Pos k1} nFactorOfM) _ = cfPrf
+    CofactorExists {k=Pos k2} mFactorOfN = factorWit (Pos $ S m) (CommonFactorExists selfIsFactor selfIsFactor)
+  in case k1 of
+    S _ => case k2 of
+      S _ => antisymmetric (reduceToLTE nFactorOfM) (reduceToLTE mFactorOfN)
+      Z => absurd $ multNotZero m n (injective mFactorOfN)
+    Z => absurd $ multNotZero n m (injective nFactorOfM)
 
+{-
 public export
 Coprime : ZZ -> ZZ -> Type
 Coprime = GCD 1

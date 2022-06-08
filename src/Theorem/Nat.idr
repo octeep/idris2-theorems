@@ -20,3 +20,7 @@ plusEqToLTE eq = rewrite sym eq in lteAddRight {m=b} a
 public export
 lteAddLeft' : {a,b,c : _} -> LTE (b + a) c -> LTE a c
 lteAddLeft' eq = lteAddLeft $ replace {p=(\x => LTE x c)} (plusCommutative b a) eq
+
+public export
+multNotZero : (i,j : Nat) -> (i * 0 = S j) -> Void
+multNotZero i j prf = uninhabited $ the (0 = S j) $ rewrite sym $ multZeroRightZero i in prf

@@ -13,6 +13,19 @@ import Decidable.Equality
 public export
 data ZZ = Pos Nat | NegS Nat
 
+public export
+data NotZero : ZZ -> Type where
+  PIsNotZero : NotZero (Pos $ S x)
+  NIsNotZero : NotZero (NegS x)
+
+public export
+NotBothZero : ZZ -> ZZ -> Type
+NotBothZero a b = Either (NotZero a) (NotZero b)
+
+public export
+Uninhabited (NotZero (Pos Z)) where
+  uninhabited _ impossible
+
 ||| Take the absolute value of a `ZZ`
 public export
 absZ : ZZ -> Nat
@@ -131,12 +144,12 @@ doubleNegElim (NegS (S n)) = Refl
 
 -- Injectivity
 public export
-posInjective : Pos n = Pos m -> n = m
-posInjective Refl = Refl
+implementation Injective Pos where
+  injective Refl = Refl
 
 public export
-negSInjective : NegS n = NegS m -> n = m
-negSInjective Refl = Refl
+implementation Injective NegS where
+  injective Refl = Refl
 
 public export
 posNotNeg : Pos n = NegS m -> Void
@@ -149,10 +162,10 @@ implementation DecEq ZZ where
   decEq (NegS n) (Pos m) = No $ negEqSym posNotNeg
   decEq (Pos n) (Pos m) with (decEq n m)
     _ | Yes p = Yes $ cong Pos p
-    _ | No p = No $ \h => p $ posInjective h
+    _ | No p = No $ \h => p $ injective h
   decEq (NegS n) (NegS m) with (decEq n m)
     _ | Yes p = Yes $ cong NegS p
-    _ | No p = No $ \h => p $ negSInjective h
+    _ | No p = No $ \h => p $ injective h
 
 -- Plus
 
@@ -329,6 +342,21 @@ multNegateLeftZ (NegS k) j = rewrite sym $ doubleNegElim (multZ (Pos (S k)) j) i
                              rewrite multNegLeftZ k j in Refl
 
 public export
+multNegateRightZ : (k, j : ZZ) -> k * (negate j) = negate (k * j)
+multNegateRightZ k j =
+  rewrite multCommutativeZ k j in
+    rewrite multCommutativeZ k (negate j) in
+      multNegateLeftZ j k
+
+public export
+multNegateCancelZ : (k, j : ZZ) -> (negate k) * (negate j) = k * j
+multNegateCancelZ k j =
+  rewrite multNegateRightZ (negate k) j in
+  rewrite multNegateLeftZ k j in
+  rewrite doubleNegElim (k * j) in
+  Refl
+
+public export
 multAssociativeZPos : (k : Nat) -> (c, r : ZZ) -> (Pos k) * (c * r) = ((Pos k) * c) * r
 multAssociativeZPos k (Pos j) (Pos i) = cong Pos $ multAssociative k j i
 multAssociativeZPos k (Pos j) (NegS i) = rewrite sym $ multAssociative k j (S i) in lemmaPosMultNegNat k (mult j (S i))
@@ -370,6 +398,15 @@ negNatDistributesPlus : (j, k : Nat) -> plusZ (negNat j) (negNat k) = negNat (pl
 negNatDistributesPlus Z k = rewrite plusZeroLeftNeutralZ (negNat k) in Refl
 negNatDistributesPlus (S j) Z = rewrite plusZeroRightNeutral j in Refl
 negNatDistributesPlus (S j) (S k) = rewrite plusSuccRightSucc j k in Refl
+
+public export
+multNotZeroZ : (i, j : ZZ) -> NotZero (i * j) -> NotZero i
+multNotZeroZ (Pos $ S n) (Pos $ S m) prf = PIsNotZero
+multNotZeroZ (Pos $ S n) (NegS m) prf = PIsNotZero
+multNotZeroZ (NegS n) (NegS m) prf = NIsNotZero
+multNotZeroZ (NegS n) (Pos $ S m) prf = NIsNotZero
+multNotZeroZ (Pos 0) m prf = replace {p=NotZero} (multZeroLeftZeroZ m) prf
+multNotZeroZ n (Pos 0) prf = absurd $ replace {p=NotZero} (multZeroRightZeroZ n) prf
 
 -- Distributivity
 
