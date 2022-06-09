@@ -22,6 +22,10 @@ negOneIsFactor {n} =
   rewrite multNegateCancelZ 1 n in multOneLeftNeutralZ n
 
 public export
+isFactorOfZero : {n : ZZ} -> Factor n 0
+isFactorOfZero = CofactorExists {a=n,k=0} $ multZeroRightZeroZ n
+
+public export
 selfIsFactor : {n : ZZ} -> Factor n n
 selfIsFactor {n} = CofactorExists {a = n, k = 1} (multOneRightNeutralZ n)
 
@@ -47,6 +51,10 @@ public export
 factorDividesNeg : Factor p n -> Factor p (-n)
 factorDividesNeg (CofactorExists {a,k,n} prf) = CofactorExists {k=(-k),n=(-n)} $
   rewrite multNegateRightZ a k in cong negate prf
+
+public export
+factorNegIsFactor : {p : _} -> Factor p n -> Factor (-p) n
+factorNegIsFactor (CofactorExists {k=q} prf) = CofactorExists $ trans (multNegateCancelZ p q) prf
 
 public export
 commonFactorDivDiff  : {d,a,b : _} -> CommonFactor d a b -> Factor d (a - b)
@@ -79,6 +87,10 @@ gcdABIsGcdANegB (MkGCD {notBothZero} cfPrf wit) =
     notZeroFlip : {b : _} -> NotZero b -> NotZero (negate b)
     notZeroFlip NIsNotZero = PIsNotZero
     notZeroFlip PIsNotZero = NIsNotZero
+
+public export
+gcdABIsGcdNegAB : {a,b : _} -> GCD p a b -> GCD p (-a) b
+gcdABIsGcdNegAB = gcdFlip . gcdABIsGcdANegB . gcdFlip
 
 public export
 gcdABIsGcdASubB : {p : _} -> {a,n : _} -> GCD p (Pos (S n)) (Pos (S a)) -> GCD p (Pos (S n)) (minusNatZ a n)
@@ -129,6 +141,14 @@ selfGCDMustBeSelf {n,m} gcd@(MkGCD cfPrf factorWit) =
     Z => absurd $ multNotZero n m (injective nFactorOfM)
 
 public export
+gcdZeroMustBeSelf : {n,m : _} -> GCD (S n) (Pos $ S m) 0 -> n = m
+gcdZeroMustBeSelf {n,m} (MkGCD cfPrf@(CommonFactorExists prfA prfB) factorWit) =
+  selfGCDMustBeSelf $
+  MkGCD
+  (CommonFactorExists prfA $ rewrite sym $ plusZeroRightNeutral m in commonFactorDivSum cfPrf)
+  (\q,(CommonFactorExists prfC _) => factorWit q $ CommonFactorExists prfC isFactorOfZero)
+
+public export
 Coprime : ZZ -> ZZ -> Type
 Coprime = GCD 1
 
@@ -153,5 +173,29 @@ mutual
             in
               euclidLemma (Pos $ S n) (minusNatZ a n) (Pos $ S b) (gcdABIsGcdASubB coprimePrf) factor
 
+  public export
   euclidLemma : (n, a, b : _) -> Coprime n a -> Factor n (a * b) -> Factor n b
-  euclidLemma (Pos $ S n) (Pos $ S a) (Pos $ S b) coprime factor = euclidLemmaPositive n a b coprime factor
+  euclidLemma (Pos $ S n) (Pos $ S a) (Pos $ S b) coprime factor =
+    euclidLemmaPositive n a b coprime factor
+  euclidLemma n a (NegS b) coprime factor =
+    factorDividesNeg
+    $ euclidLemma n a (Pos $ S b) coprime
+    $ replace {p = Factor n} (sym $ multNegateRightZ a $ NegS b)
+    $ factorDividesNeg factor
+  euclidLemma n (NegS a) b coprime factor =
+    euclidLemma n (Pos $ S a) b (gcdABIsGcdANegB coprime)
+    $ replace {p = Factor n} (sym $ multNegateLeftZ (NegS a) b)
+    $ factorDividesNeg factor
+  euclidLemma (NegS n) a b coprime factor =
+    factorNegIsFactor
+    $ euclidLemma (Pos $ S n) a b (gcdABIsGcdNegAB coprime) (factorNegIsFactor factor)
+  euclidLemma n a (Pos 0) coprime factor =
+    isFactorOfZero
+  euclidLemma (Pos $ S n) (Pos 0) b coprime factor =
+    rewrite sym $ cong S $ gcdZeroMustBeSelf coprime in oneIsFactor
+  euclidLemma (Pos 0) (Pos a) (Pos b) coprime factor =
+    case factor of
+      CofactorExists {k} prf => CofactorExists
+        $ trans (sym $ multCommutative a b)
+        $ injective
+        $ trans (sym prf) (multZeroLeftZeroZ k)
