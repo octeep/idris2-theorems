@@ -26,6 +26,11 @@ public export
 Uninhabited (NotZero (Pos Z)) where
   uninhabited _ impossible
 
+public export
+Uninhabited (NotBothZero (Pos Z) (Pos Z)) where
+  uninhabited (Left prf) = uninhabited prf
+  uninhabited (Right prf) = uninhabited prf
+
 ||| Take the absolute value of a `ZZ`
 public export
 absZ : ZZ -> Nat

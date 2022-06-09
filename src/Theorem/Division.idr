@@ -26,6 +26,10 @@ isFactorOfZero : {n : ZZ} -> Factor n 0
 isFactorOfZero = CofactorExists {a=n,k=0} $ multZeroRightZeroZ n
 
 public export
+zeroFactorMustBeZero : {n : ZZ} -> Factor 0 n -> n = 0
+zeroFactorMustBeZero (CofactorExists {k} prf) = trans (sym prf) (multZeroLeftZeroZ k)
+
+public export
 selfIsFactor : {n : ZZ} -> Factor n n
 selfIsFactor {n} = CofactorExists {a = n, k = 1} (multOneRightNeutralZ n)
 
@@ -149,6 +153,13 @@ gcdZeroMustBeSelf {n,m} (MkGCD cfPrf@(CommonFactorExists prfA prfB) factorWit) =
   (\q,(CommonFactorExists prfC _) => factorWit q $ CommonFactorExists prfC isFactorOfZero)
 
 public export
+{a,b : _} -> Uninhabited (GCD 0 a b) where
+  uninhabited (MkGCD {notBothZero} (CommonFactorExists prfA prfB) factorWit) =
+    case notBothZero of
+      Left  prf => uninhabited $ replace {p = NotZero} (zeroFactorMustBeZero prfA) prf
+      Right prf => uninhabited $ replace {p = NotZero} (zeroFactorMustBeZero prfB) prf
+
+public export
 Coprime : ZZ -> ZZ -> Type
 Coprime = GCD 1
 
@@ -194,8 +205,16 @@ mutual
   euclidLemma (Pos $ S n) (Pos 0) b coprime factor =
     rewrite sym $ cong S $ gcdZeroMustBeSelf coprime in oneIsFactor
   euclidLemma (Pos 0) (Pos a) (Pos b) coprime factor =
-    case factor of
-      CofactorExists {k} prf => CofactorExists
-        $ trans (sym $ multCommutative a b)
-        $ injective
-        $ trans (sym prf) (multZeroLeftZeroZ k)
+    case (coprime, factor) of
+      (MkGCD {notBothZero = Right aNotZero} _ _, CofactorExists {k} prf) =>
+        case a of
+          Z => absurd aNotZero
+          S a' =>
+            let
+              bIsZero =
+                productZeroInfersZero b a'
+                  $ trans (sym $ multCommutative a b)
+                  $ injective
+                  $ trans (sym prf) (multZeroLeftZeroZ k)
+            in
+              rewrite bIsZero in isFactorOfZero

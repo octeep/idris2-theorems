@@ -24,3 +24,7 @@ lteAddLeft' eq = lteAddLeft $ replace {p=(\x => LTE x c)} (plusCommutative b a) 
 public export
 multNotZero : (i,j : Nat) -> (i * 0 = S j) -> Void
 multNotZero i j prf = uninhabited $ the (0 = S j) $ rewrite sym $ multZeroRightZero i in prf
+
+public export
+productZeroInfersZero : (a, b : Nat) -> a * (S b) = 0 -> a = 0
+productZeroInfersZero Z _ prf = prf
