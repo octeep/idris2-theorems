@@ -7,6 +7,8 @@ import Control.Relation
 import Decidable.Equality
 import Data.Either
 
+%default total
+
 public export
 data Factor : ZZ -> ZZ -> Type where
   CofactorExists : {a, k, n : ZZ} -> (a * k = n) -> Factor a n
@@ -182,7 +184,7 @@ mutual
               step = sym $ trans impo $ sym $ trans amog us
               factor = CofactorExists step
             in
-              euclidLemma (Pos $ S n) (minusNatZ a n) (Pos $ S b) (gcdABIsGcdASubB coprimePrf) factor
+              euclidLemma (Pos $ S n) (assert_smaller a $ minusNatZ a n) (Pos $ S b) (gcdABIsGcdASubB coprimePrf) factor
 
   public export
   euclidLemma : (n, a, b : _) -> Coprime n a -> Factor n (a * b) -> Factor n b
@@ -190,11 +192,11 @@ mutual
     euclidLemmaPositive n a b coprime factor
   euclidLemma n a (NegS b) coprime factor =
     factorDividesNeg
-    $ euclidLemma n a (Pos $ S b) coprime
+    $ euclidLemma n a (assert_smaller (NegS b) $ Pos $ S b) coprime
     $ replace {p = Factor n} (sym $ multNegateRightZ a $ NegS b)
     $ factorDividesNeg factor
   euclidLemma n (NegS a) b coprime factor =
-    euclidLemma n (Pos $ S a) b (gcdABIsGcdANegB coprime)
+    euclidLemma n (assert_smaller (NegS a) $ Pos $ S a) b (gcdABIsGcdANegB coprime)
     $ replace {p = Factor n} (sym $ multNegateLeftZ (NegS a) b)
     $ factorDividesNeg factor
   euclidLemma (NegS n) a b coprime factor =

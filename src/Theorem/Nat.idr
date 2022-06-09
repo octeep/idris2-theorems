@@ -3,6 +3,8 @@ module Theorem.Nat
 import Data.Nat
 import Control.Function
 
+%default total
+
 public export
 lteAddLeft : {a,b,c : _} -> LTE (a + b) c -> LTE a c
 lteAddLeft {b=Z} eq =
