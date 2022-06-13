@@ -3,6 +3,7 @@ module Theorem.Pythagorean
 import Theorem.Division
 import Theorem.ZZ
 import Theorem.Basic
+import Theorem.Nat
 import Data.Nat
 import Data.Nat.Factor
 
@@ -34,8 +35,6 @@ data PrimPythTripeNGen : PrimPythTripleN a b c -> Nat -> Nat -> Type where
            c = m * m + n * n ->
            PrimPythTripeNGen t m n
 
-squareDiffFactor : (a, b : Nat) -> b `LTE` a -> (a + b) * (a `minus` b) = (a * a) `minus` (b * b)
-squareDiffFactor a b prf = ?what $ squareDiffFactorZ (Pos a) (Pos b)
 
 public export
 reduceTripleToGen : (t : PrimPythTripleN a b c) -> GCD3 1 a b c -> PrimPythTripeNGen t m n

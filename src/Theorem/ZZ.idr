@@ -500,13 +500,26 @@ multDistributesOverPlusLeftZ l c r = rewrite multCommutativeZ (l + c) r in
                                      rewrite multCommutativeZ r l in
                                              rewrite multCommutativeZ r c in Refl
 
+-- Nat homomorphisms
+
 public export
-diffIsPositive : (a, b : Nat) -> b `LTE` a -> IsPositive (Pos a - Pos b)
-diffIsPositive Z Z prf = PosIsPositive
-diffIsPositive (S a) Z prf = PosIsPositive
-diffIsPositive (S a) (S b) (LTESucc prf) =
-  ?di
-  $ replace {p = (\x => IsPositive (Pos a + x))} (lemmaNegatePosNegNat b) (diffIsPositive a b prf)
+nzPlusHomomorphism : (a, b : Nat) -> Pos a + Pos b = Pos (a + b)
+nzPlusHomomorphism Z b = Refl
+nzPlusHomomorphism (S a) b = Refl
+
+public export
+nzMultHomomorphism : (a, b : Nat) -> Pos a * Pos b = Pos (a * b)
+nzMultHomomorphism Z b = Refl
+nzMultHomomorphism (S a) b = Refl
+
+public export
+nzMinusPartialHomomorphism : (a, b : Nat) -> b `LTE` a -> Pos a - Pos b = Pos (a `minus` b)
+nzMinusPartialHomomorphism Z Z _ = Refl
+nzMinusPartialHomomorphism (S a) Z _ = rewrite plusZeroRightNeutral a in Refl
+nzMinusPartialHomomorphism (S a) (S b) (LTESucc prf) =
+  case b of
+    Z => sym $ cong Pos (minusZeroRight a)
+    S b' => nzMinusPartialHomomorphism a b prf
 
 -- Common algebra identities
 
@@ -525,14 +538,14 @@ squareDiffFactorZ a b =
   rewrite multNegateRightZ b b in
   Refl
 
--- Nat homomorphisms
-
 public export
-nzPlusHomomorphism : (a, b : Nat) -> Pos a + Pos b = Pos (a + b)
-nzPlusHomomorphism Z b = Refl
-nzPlusHomomorphism (S a) b = Refl
+squareDiffFactor : (a, b : Nat) -> b `LTE` a -> (a + b) * (a `minus` b) = (a * a) `minus` (b * b)
+squareDiffFactor a b prf =
+  let
+    prfA =
+      replace {p = (\x => (Pos (a + b)) * x = Pos (a * a) - Pos (b * b) )}
+      (nzMinusPartialHomomorphism a b prf)
+      (squareDiffFactorZ (Pos a) (Pos b))
+  in
+    injective $ trans prfA $ nzMinusPartialHomomorphism (a * a) (b * b) $ lteSquareLemma b a prf
 
-public export
-nzMultHomomorphism : (a, b : Nat) -> Pos a * Pos b = Pos (a * b)
-nzMultHomomorphism Z b = Refl
-nzMultHomomorphism (S a) b = Refl
