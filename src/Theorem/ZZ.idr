@@ -2,6 +2,7 @@ module Theorem.ZZ
 
 import Data.Nat
 import Decidable.Equality
+import Theorem.Nat
 
 %default total
 
@@ -19,8 +20,21 @@ data NotZero : ZZ -> Type where
   NIsNotZero : NotZero (NegS x)
 
 public export
+data IsPositive : ZZ -> Type where
+  PosIsPositive : IsPositive (Pos n)
+
+public export
+data EvenZ : ZZ -> Type where
+  PosEvenZ : Even n -> EvenZ (Pos n)
+  NegEvenZ : Even (S n) -> EvenZ (NegS n)
+
+public export
 NotBothZero : ZZ -> ZZ -> Type
 NotBothZero a b = Either (NotZero a) (NotZero b)
+
+public export
+Uninhabited (IsPositive (NegS n)) where
+  uninhabited _ impossible
 
 public export
 Uninhabited (NotZero (Pos Z)) where
@@ -430,6 +444,14 @@ multNotZeroZ (NegS n) (Pos $ S m) prf = NIsNotZero
 multNotZeroZ (Pos 0) m prf = replace {p=NotZero} (multZeroLeftZeroZ m) prf
 multNotZeroZ n (Pos 0) prf = absurd $ replace {p=NotZero} (multZeroRightZeroZ n) prf
 
+%hint
+public export
+productNotZeroZ : (i, j : ZZ) -> NotZero i -> NotZero j -> NotZero (i * j)
+productNotZeroZ (Pos $ S i) (Pos $ S j) ni nj = PIsNotZero
+productNotZeroZ (Pos $ S i) (NegS j) ni nj = NIsNotZero
+productNotZeroZ (NegS i) (Pos $ S j) ni nj = NIsNotZero
+productNotZeroZ (NegS i) (NegS j) ni nj = PIsNotZero
+
 -- Distributivity
 
 %hint
@@ -477,3 +499,40 @@ multDistributesOverPlusLeftZ l c r = rewrite multCommutativeZ (l + c) r in
                                      rewrite multDistributesOverPlusRightZ r l c in
                                      rewrite multCommutativeZ r l in
                                              rewrite multCommutativeZ r c in Refl
+
+public export
+diffIsPositive : (a, b : Nat) -> b `LTE` a -> IsPositive (Pos a - Pos b)
+diffIsPositive Z Z prf = PosIsPositive
+diffIsPositive (S a) Z prf = PosIsPositive
+diffIsPositive (S a) (S b) (LTESucc prf) =
+  ?di
+  $ replace {p = (\x => IsPositive (Pos a + x))} (lemmaNegatePosNegNat b) (diffIsPositive a b prf)
+
+-- Common algebra identities
+
+public export
+squareDiffFactorZ : (a, b : ZZ) -> (a + b) * (a - b) = (a * a) - (b * b)
+squareDiffFactorZ a b =
+  rewrite multDistributesOverPlusLeftZ a b (a - b) in
+  rewrite multDistributesOverPlusRightZ a a (-b) in
+  rewrite multDistributesOverPlusRightZ b a (-b) in
+  rewrite sym $ plusAssociativeZ (a * a) (a * -b) (b * a + b * -b) in
+  rewrite plusAssociativeZ (a * -b) (b * a) (b * -b) in
+  rewrite multNegateRightZ a b in
+  rewrite multCommutativeZ a b in
+  rewrite plusNegateInverseRZ (b * a) in
+  rewrite plusZeroLeftNeutralZ (b * -b) in
+  rewrite multNegateRightZ b b in
+  Refl
+
+-- Nat homomorphisms
+
+public export
+nzPlusHomomorphism : (a, b : Nat) -> Pos a + Pos b = Pos (a + b)
+nzPlusHomomorphism Z b = Refl
+nzPlusHomomorphism (S a) b = Refl
+
+public export
+nzMultHomomorphism : (a, b : Nat) -> Pos a * Pos b = Pos (a * b)
+nzMultHomomorphism Z b = Refl
+nzMultHomomorphism (S a) b = Refl

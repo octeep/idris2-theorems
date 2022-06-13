@@ -6,6 +6,11 @@ import Control.Function
 %default total
 
 public export
+data Even : Nat -> Type where
+  ZeroIsEven : Even Z
+  SuccIsEven : Even n -> Even (S (S n))
+
+public export
 lteAddLeft : {a,b,c : _} -> LTE (a + b) c -> LTE a c
 lteAddLeft {b=Z} eq =
   replace {p=(\x => LTE x c)} (plusZeroRightNeutral a) eq

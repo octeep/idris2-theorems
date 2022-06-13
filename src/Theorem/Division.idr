@@ -10,42 +10,42 @@ import Data.Either
 %default total
 
 public export
-data Factor : ZZ -> ZZ -> Type where
-  CofactorExists : {a, k, n : ZZ} -> (a * k = n) -> Factor a n
+data FactorZZ : ZZ -> ZZ -> Type where
+  CofactorExists : {a, k, n : ZZ} -> (a * k = n) -> FactorZZ a n
 
 public export
-oneIsFactor : {n : ZZ} -> Factor 1 n
-oneIsFactor {n} = CofactorExists $ multOneLeftNeutralZ n
+oneIsFactorZZ : {n : ZZ} -> FactorZZ 1 n
+oneIsFactorZZ {n} = CofactorExists $ multOneLeftNeutralZ n
 
 public export
-negOneIsFactor : {n : ZZ} -> Factor (-1) n
-negOneIsFactor {n} =
+negOneIsFactorZZ : {n : ZZ} -> FactorZZ (-1) n
+negOneIsFactorZZ {n} =
   CofactorExists {k=(negate n), a=(-1)} $
   rewrite multNegateCancelZ 1 n in multOneLeftNeutralZ n
 
 public export
-isFactorOfZero : {n : ZZ} -> Factor n 0
-isFactorOfZero = CofactorExists {a=n,k=0} $ multZeroRightZeroZ n
+isFactorZZOfZero : {n : ZZ} -> FactorZZ n 0
+isFactorZZOfZero = CofactorExists {a=n,k=0} $ multZeroRightZeroZ n
 
 public export
-zeroFactorMustBeZero : {n : ZZ} -> Factor 0 n -> n = 0
-zeroFactorMustBeZero (CofactorExists {k} prf) = trans (sym prf) (multZeroLeftZeroZ k)
+zeroFactorZZMustBeZero : {n : ZZ} -> FactorZZ 0 n -> n = 0
+zeroFactorZZMustBeZero (CofactorExists {k} prf) = trans (sym prf) (multZeroLeftZeroZ k)
 
 public export
-selfIsFactor : {n : ZZ} -> Factor n n
-selfIsFactor {n} = CofactorExists {a = n, k = 1} (multOneRightNeutralZ n)
+selfIsFactorZZ : {n : ZZ} -> FactorZZ n n
+selfIsFactorZZ {n} = CofactorExists {a = n, k = 1} (multOneRightNeutralZ n)
 
 public export
-data CommonFactor : ZZ -> ZZ -> ZZ -> Type where
-  CommonFactorExists : Factor p a -> Factor p b -> CommonFactor p a b
+data CommonFactorZZ : ZZ -> ZZ -> ZZ -> Type where
+  CommonFactorZZExists : FactorZZ p a -> FactorZZ p b -> CommonFactorZZ p a b
 
 public export
-commonFactorFlip : CommonFactor p a b -> CommonFactor p b a
-commonFactorFlip (CommonFactorExists prf1 prf2) = CommonFactorExists prf2 prf1
+commonFactorZZFlip : CommonFactorZZ p a b -> CommonFactorZZ p b a
+commonFactorZZFlip (CommonFactorZZExists prf1 prf2) = CommonFactorZZExists prf2 prf1
 
 public export
-commonFactorDivSum  : {d,a,b : _} -> CommonFactor d a b -> Factor d (a + b)
-commonFactorDivSum (CommonFactorExists factorA factorB) =
+commonFactorZZDivSum  : {d,a,b : _} -> CommonFactorZZ d a b -> FactorZZ d (a + b)
+commonFactorZZDivSum (CommonFactorZZExists factorA factorB) =
   let
     CofactorExists {k=p} prfA = factorA
     CofactorExists {k=q} prfB = factorB
@@ -54,64 +54,64 @@ commonFactorDivSum (CommonFactorExists factorA factorB) =
     CofactorExists $ trans (multDistributesOverPlusRightZ d p q) prfAB
 
 public export
-factorDividesNeg : Factor p n -> Factor p (-n)
+factorDividesNeg : FactorZZ p n -> FactorZZ p (-n)
 factorDividesNeg (CofactorExists {a,k,n} prf) = CofactorExists {k=(-k),n=(-n)} $
   rewrite multNegateRightZ a k in cong negate prf
 
 public export
-factorNegIsFactor : {p : _} -> Factor p n -> Factor (-p) n
-factorNegIsFactor (CofactorExists {k=q} prf) = CofactorExists $ trans (multNegateCancelZ p q) prf
+factorNegIsFactorZZ : {p : _} -> FactorZZ p n -> FactorZZ (-p) n
+factorNegIsFactorZZ (CofactorExists {k=q} prf) = CofactorExists $ trans (multNegateCancelZ p q) prf
 
 public export
-commonFactorDivDiff  : {d,a,b : _} -> CommonFactor d a b -> Factor d (a - b)
-commonFactorDivDiff (CommonFactorExists prfA prfB) =
-  commonFactorDivSum {b=(-b)}
-  $ CommonFactorExists prfA
+commonFactorZZDivDiff  : {d,a,b : _} -> CommonFactorZZ d a b -> FactorZZ d (a - b)
+commonFactorZZDivDiff (CommonFactorZZExists prfA prfB) =
+  commonFactorZZDivSum {b=(-b)}
+  $ CommonFactorZZExists prfA
   $ factorDividesNeg prfB
 
 public export
-data GCD : Nat -> ZZ -> ZZ -> Type where
-  MkGCD : {auto notBothZero : NotBothZero a b} ->
-          (CommonFactor (cast p) a b) ->
-          ((q : ZZ) -> CommonFactor q a b -> Factor q (cast p)) ->
-          GCD p a b
+data GCDZZ : Nat -> ZZ -> ZZ -> Type where
+  MkGCDZZ : {auto notBothZero : NotBothZero a b} ->
+          (CommonFactorZZ (cast p) a b) ->
+          ((q : ZZ) -> CommonFactorZZ q a b -> FactorZZ q (cast p)) ->
+          GCDZZ p a b
 
 public export
-gcdFlip : GCD p a b -> GCD p b a
-gcdFlip (MkGCD {notBothZero} crPrf wit) =
-  MkGCD {notBothZero = mirror notBothZero} (commonFactorFlip crPrf) (\q,w => wit q $ commonFactorFlip w)
+gcdFlip : GCDZZ p a b -> GCDZZ p b a
+gcdFlip (MkGCDZZ {notBothZero} crPrf wit) =
+  MkGCDZZ {notBothZero = mirror notBothZero} (commonFactorZZFlip crPrf) (\q,w => wit q $ commonFactorZZFlip w)
 
 public export
-gcdABIsGcdANegB : {b : _} -> GCD p a b -> GCD p a (-b)
-gcdABIsGcdANegB (MkGCD {notBothZero} cfPrf wit) =
-  MkGCD {notBothZero=map notZeroFlip notBothZero}
+gcdABIsGcdANegB : {b : _} -> GCDZZ p a b -> GCDZZ p a (-b)
+gcdABIsGcdANegB (MkGCDZZ {notBothZero} cfPrf wit) =
+  MkGCDZZ {notBothZero=map notZeroFlip notBothZero}
     (cfDividesNeg cfPrf)
-    (\q,f => wit q $ replace {p = CommonFactor q a} (doubleNegElim b) $ cfDividesNeg f)
+    (\q,f => wit q $ replace {p = CommonFactorZZ q a} (doubleNegElim b) $ cfDividesNeg f)
   where
-    cfDividesNeg : CommonFactor f n m -> CommonFactor f n (-m)
-    cfDividesNeg (CommonFactorExists a b) = CommonFactorExists a (factorDividesNeg b)
+    cfDividesNeg : CommonFactorZZ f n m -> CommonFactorZZ f n (-m)
+    cfDividesNeg (CommonFactorZZExists a b) = CommonFactorZZExists a (factorDividesNeg b)
     notZeroFlip : {b : _} -> NotZero b -> NotZero (negate b)
     notZeroFlip NIsNotZero = PIsNotZero
     notZeroFlip PIsNotZero = NIsNotZero
 
 public export
-gcdABIsGcdNegAB : {a,b : _} -> GCD p a b -> GCD p (-a) b
+gcdABIsGcdNegAB : {a,b : _} -> GCDZZ p a b -> GCDZZ p (-a) b
 gcdABIsGcdNegAB = gcdFlip . gcdABIsGcdANegB . gcdFlip
 
 public export
-gcdABIsGcdASubB : {p : _} -> {a,n : _} -> GCD p (Pos (S n)) (Pos (S a)) -> GCD p (Pos (S n)) (minusNatZ a n)
+gcdABIsGcdASubB : {p : _} -> {a,n : _} -> GCDZZ p (Pos (S n)) (Pos (S a)) -> GCDZZ p (Pos (S n)) (minusNatZ a n)
 gcdABIsGcdASubB gcd =
   let
-    MkGCD cfProof@(CommonFactorExists prfA prfB) wit = gcdABIsGcdANegB gcd
+    MkGCDZZ cfProof@(CommonFactorZZExists prfA prfB) wit = gcdABIsGcdANegB gcd
     eq = minusNatZAntiCommutative n a
   in
-    replace {p = GCD p (Pos (S n))} eq
+    replace {p = GCDZZ p (Pos (S n))} eq
     $ gcdABIsGcdANegB
-    $ MkGCD (CommonFactorExists prfA
-    $ commonFactorDivSum cfProof) (\q,cf => wit q $ cfChange cf)
+    $ MkGCDZZ (CommonFactorZZExists prfA
+    $ commonFactorZZDivSum cfProof) (\q,cf => wit q $ cfChange cf)
   where
-    cfChange : {q:_} -> CommonFactor q (Pos (S n)) (minusNatZ n a) -> CommonFactor q (Pos (S n)) (NegS a)
-    cfChange prfCD@(CommonFactorExists prfC prfD) =
+    cfChange : {q:_} -> CommonFactorZZ q (Pos (S n)) (minusNatZ n a) -> CommonFactorZZ q (Pos (S n)) (NegS a)
+    cfChange prfCD@(CommonFactorZZExists prfC prfD) =
       let
         tEq = the (plusZ (Pos (S n)) (negate (minusNatZ n a)) = Pos (S a)) $
           rewrite negateDistributesPlus (Pos $ S n) (NegS a) in
@@ -119,10 +119,10 @@ gcdABIsGcdASubB gcd =
           rewrite lemmaMinusSymmZero n in
           Refl
       in
-        CommonFactorExists prfC (factorDividesNeg $ replace {p = Factor q} tEq $ commonFactorDivDiff prfCD)
+        CommonFactorZZExists prfC (factorDividesNeg $ replace {p = FactorZZ q} tEq $ commonFactorZZDivDiff prfCD)
 
 public export
-Uninhabited (Factor 0 (Pos (S n))) where
+Uninhabited (FactorZZ 0 (Pos (S n))) where
   uninhabited (CofactorExists prf) impossible
 
 reduceToLTE : {n,m,k : _} -> Pos (S (plus k (mult n (S k)))) = Pos (S m) -> LTE n m
@@ -135,46 +135,46 @@ reduceToLTE eq =
   injective $ injective eq
 
 public export
-selfGCDMustBeSelf : {n,m :_} -> GCD (S n) (Pos $ S m) (Pos $ S m) -> n = m
-selfGCDMustBeSelf {n,m} gcd@(MkGCD cfPrf factorWit) =
+selfGCDZZMustBeSelf : {n,m :_} -> GCDZZ (S n) (Pos $ S m) (Pos $ S m) -> n = m
+selfGCDZZMustBeSelf {n,m} gcd@(MkGCDZZ cfPrf factorWit) =
   let
-    CommonFactorExists (CofactorExists {k=Pos k1} nFactorOfM) _ = cfPrf
-    CofactorExists {k=Pos k2} mFactorOfN = factorWit (Pos $ S m) (CommonFactorExists selfIsFactor selfIsFactor)
+    CommonFactorZZExists (CofactorExists {k=Pos k1} nFactorZZOfM) _ = cfPrf
+    CofactorExists {k=Pos k2} mFactorZZOfN = factorWit (Pos $ S m) (CommonFactorZZExists selfIsFactorZZ selfIsFactorZZ)
   in case k1 of
     S _ => case k2 of
-      S _ => antisymmetric (reduceToLTE nFactorOfM) (reduceToLTE mFactorOfN)
-      Z => absurd $ multNotZero m n (injective mFactorOfN)
-    Z => absurd $ multNotZero n m (injective nFactorOfM)
+      S _ => antisymmetric (reduceToLTE nFactorZZOfM) (reduceToLTE mFactorZZOfN)
+      Z => absurd $ multNotZero m n (injective mFactorZZOfN)
+    Z => absurd $ multNotZero n m (injective nFactorZZOfM)
 
 public export
-gcdZeroMustBeSelf : {n,m : _} -> GCD (S n) (Pos $ S m) 0 -> n = m
-gcdZeroMustBeSelf {n,m} (MkGCD cfPrf@(CommonFactorExists prfA prfB) factorWit) =
-  selfGCDMustBeSelf $
-  MkGCD
-  (CommonFactorExists prfA $ rewrite sym $ plusZeroRightNeutral m in commonFactorDivSum cfPrf)
-  (\q,(CommonFactorExists prfC _) => factorWit q $ CommonFactorExists prfC isFactorOfZero)
+gcdZeroMustBeSelf : {n,m : _} -> GCDZZ (S n) (Pos $ S m) 0 -> n = m
+gcdZeroMustBeSelf {n,m} (MkGCDZZ cfPrf@(CommonFactorZZExists prfA prfB) factorWit) =
+  selfGCDZZMustBeSelf $
+  MkGCDZZ
+  (CommonFactorZZExists prfA $ rewrite sym $ plusZeroRightNeutral m in commonFactorZZDivSum cfPrf)
+  (\q,(CommonFactorZZExists prfC _) => factorWit q $ CommonFactorZZExists prfC isFactorZZOfZero)
 
 public export
-{a,b : _} -> Uninhabited (GCD 0 a b) where
-  uninhabited (MkGCD {notBothZero} (CommonFactorExists prfA prfB) factorWit) =
+{a,b : _} -> Uninhabited (GCDZZ 0 a b) where
+  uninhabited (MkGCDZZ {notBothZero} (CommonFactorZZExists prfA prfB) factorWit) =
     case notBothZero of
-      Left  prf => uninhabited $ replace {p = NotZero} (zeroFactorMustBeZero prfA) prf
-      Right prf => uninhabited $ replace {p = NotZero} (zeroFactorMustBeZero prfB) prf
+      Left  prf => uninhabited $ replace {p = NotZero} (zeroFactorZZMustBeZero prfA) prf
+      Right prf => uninhabited $ replace {p = NotZero} (zeroFactorZZMustBeZero prfB) prf
 
 public export
 Coprime : ZZ -> ZZ -> Type
-Coprime = GCD 1
+Coprime = GCDZZ 1
 
 mutual
   euclidLemmaPositive : (n, a, b: Nat) ->
                         Coprime (Pos $ S n) (Pos $ S a) ->
-                        Factor (Pos $ S n) ((Pos $ S a) * (Pos $ S b)) ->
-                        Factor (Pos $ S n) (Pos $ S b)
+                        FactorZZ (Pos $ S n) ((Pos $ S a) * (Pos $ S b)) ->
+                        FactorZZ (Pos $ S n) (Pos $ S b)
   euclidLemmaPositive n a b coprimePrf nDividesAB =
     case decEq n a of
          Yes prf =>
-            let nIsOne = selfGCDMustBeSelf $ replace {p = GCD 1 (Pos $ S n) . Pos . S} (sym prf) coprimePrf
-            in rewrite sym nIsOne in oneIsFactor
+            let nIsOne = selfGCDZZMustBeSelf $ replace {p = GCDZZ 1 (Pos $ S n) . Pos . S} (sym prf) coprimePrf
+            in rewrite sym nIsOne in oneIsFactorZZ
          No prf =>
             let
               CofactorExists {k=q} nqab = nDividesAB
@@ -187,28 +187,28 @@ mutual
               euclidLemma (Pos $ S n) (assert_smaller a $ minusNatZ a n) (Pos $ S b) (gcdABIsGcdASubB coprimePrf) factor
 
   public export
-  euclidLemma : (n, a, b : _) -> Coprime n a -> Factor n (a * b) -> Factor n b
+  euclidLemma : (n, a, b : _) -> Coprime n a -> FactorZZ n (a * b) -> FactorZZ n b
   euclidLemma (Pos $ S n) (Pos $ S a) (Pos $ S b) coprime factor =
     euclidLemmaPositive n a b coprime factor
   euclidLemma n a (NegS b) coprime factor =
     factorDividesNeg
     $ euclidLemma n a (assert_smaller (NegS b) $ Pos $ S b) coprime
-    $ replace {p = Factor n} (sym $ multNegateRightZ a $ NegS b)
+    $ replace {p = FactorZZ n} (sym $ multNegateRightZ a $ NegS b)
     $ factorDividesNeg factor
   euclidLemma n (NegS a) b coprime factor =
     euclidLemma n (assert_smaller (NegS a) $ Pos $ S a) b (gcdABIsGcdANegB coprime)
-    $ replace {p = Factor n} (sym $ multNegateLeftZ (NegS a) b)
+    $ replace {p = FactorZZ n} (sym $ multNegateLeftZ (NegS a) b)
     $ factorDividesNeg factor
   euclidLemma (NegS n) a b coprime factor =
-    factorNegIsFactor
-    $ euclidLemma (Pos $ S n) a b (gcdABIsGcdNegAB coprime) (factorNegIsFactor factor)
+    factorNegIsFactorZZ
+    $ euclidLemma (Pos $ S n) a b (gcdABIsGcdNegAB coprime) (factorNegIsFactorZZ factor)
   euclidLemma n a (Pos 0) coprime factor =
-    isFactorOfZero
+    isFactorZZOfZero
   euclidLemma (Pos $ S n) (Pos 0) b coprime factor =
-    rewrite sym $ cong S $ gcdZeroMustBeSelf coprime in oneIsFactor
+    rewrite sym $ cong S $ gcdZeroMustBeSelf coprime in oneIsFactorZZ
   euclidLemma (Pos 0) (Pos a) (Pos b) coprime factor =
     case (coprime, factor) of
-      (MkGCD {notBothZero = Right aNotZero} _ _, CofactorExists {k} prf) =>
+      (MkGCDZZ {notBothZero = Right aNotZero} _ _, CofactorExists {k} prf) =>
         case a of
           Z => absurd aNotZero
           S a' =>
@@ -219,4 +219,8 @@ mutual
                   $ injective
                   $ trans (sym prf) (multZeroLeftZeroZ k)
             in
-              rewrite bIsZero in isFactorOfZero
+              rewrite bIsZero in isFactorZZOfZero
+
+public export
+data GCDZZ3 : Nat -> ZZ -> ZZ -> ZZ -> Type where
+  MkGCDZZ3 : GCDZZ p a b -> GCDZZ q (Pos p) c -> GCDZZ3 q a b c
