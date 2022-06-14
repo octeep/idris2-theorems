@@ -1,6 +1,7 @@
 module Theorem.Nat
 
 import Data.Nat
+import Data.Nat.Factor
 import Control.Function
 
 %default total
@@ -55,3 +56,23 @@ lteMultConcatLemma (S a) (S b) c d (LTESucc prfAB) prfCD =
 public export
 lteSquareLemma : (a, b : Nat) -> LTE a b -> LTE (a * a) (b * b)
 lteSquareLemma a b prf = lteMultConcatLemma a b a b prf prf
+
+  {-
+public export
+euclidLemma : (n, a, b: Nat) -> GCD 1 (S n) (S a) -> Factor (S n) ((S a) * (S b)) -> Factor (S n) (S b)
+euclidLemma n a b coprimePrf nDividesAB = ?aa
+  case decEq n a of
+       Yes prf =>
+          let nIsOne = selfGCDZZMustBeSelf $ replace {p = GCDZZ 1 (Pos $ S n) . Pos . S} (sym prf) coprimePrf
+          in rewrite sym nIsOne in oneIsFactorZZ
+       No prf =>
+          let
+            CofactorExists {k=q} nqab = nDividesAB
+            amog = multDistributesOverPlusRightZ (Pos $ S n) q (-(Pos $ S b))
+            us = cong (\x => x - ((Pos $ S n) * (Pos $ S b))) nqab
+            impo = multDistributesOverPlusLeftZ (Pos $ S a) (NegS n) (Pos $ S b)
+            step = sym $ trans impo $ sym $ trans amog us
+            factor = CofactorExists step
+          in
+            euclidLemma (Pos $ S n) (assert_smaller a $ minusNatZ a n) (Pos $ S b) (gcdABIsGcdASubB coprimePrf) factor
+

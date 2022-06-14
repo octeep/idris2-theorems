@@ -13,7 +13,21 @@ data QQ : Type where
 
 public export
 reduceCommonFactor : (num, den : ZZ) -> (dnz : NotZero den) -> QQ
-reduceCommonFactor num den prf = ?aa
+reduceCommonFactor num den dnz =
+  let
+    (gcd ** gcdWit) = gcdz num den
+    MkGCDZZ (CommonFactorExists prfA prfB) _ = gcdWit
+    CofactorExists {k=k1} gcdNum = prfA
+    CofactorExists {k=k2} gcdDen = prfB
+    gcdWitAB =
+      divByGcdGcdOneZ
+      $ replace {p = \x => GCDZZ gcd x (Pos gcd * k2)} (sym gcdNum)
+      $ replace {p = GCDZZ gcd num} (sym gcdDen) gcdWit
+  in
+    case k2 of
+      Pos (S k2') => MkQQ k1 (S k2') gcdWitAB
+      NegS k2' => MkQQ (-k1) (S k2') $ gcdABIsGcdANegB $ gcdABIsGcdNegAB gcdWitAB
+      Pos Z => absurd $ replace {p=NotZero} (sym $ trans (sym $ cong Pos $ multZeroRightZero gcd) gcdDen) dnz
 
 {-
 plus : QQ -> QQ -> QQ
