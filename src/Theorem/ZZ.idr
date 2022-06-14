@@ -45,6 +45,16 @@ Uninhabited (NotBothZero (Pos Z) (Pos Z)) where
   uninhabited (Left prf) = uninhabited prf
   uninhabited (Right prf) = uninhabited prf
 
+public export
+nzNotBothZero : Nat.NotBothZero a b -> ZZ.NotBothZero (Pos a) (Pos b)
+nzNotBothZero LeftIsNotZero = Left PIsNotZero
+nzNotBothZero RightIsNotZero = Right PIsNotZero
+
+public export
+znNotBothZero : {a,b : _} -> ZZ.NotBothZero (Pos a) (Pos b) -> Nat.NotBothZero a b
+znNotBothZero (Right prf) = case b of S b' => RightIsNotZero
+znNotBothZero (Left prf) = case a of S a' => LeftIsNotZero
+
 ||| Take the absolute value of a `ZZ`
 public export
 absZ : ZZ -> Nat
@@ -139,6 +149,11 @@ implementation Cast Integer ZZ where
 --------------------------------------------------------------------------------
 -- Properties
 --------------------------------------------------------------------------------
+
+public export
+negNatAbsZ : (n : Nat) -> absZ (negNat n) = n
+negNatAbsZ Z = Refl
+negNatAbsZ (S n) = Refl
 
 public export
 natPlusZPlus : (n : Nat) -> (m : Nat) -> (x : Nat)
@@ -356,6 +371,11 @@ public export
 lemmaNegatePosNegNat : (k : Nat) -> negate (Pos k) = negNat k
 lemmaNegatePosNegNat Z = Refl
 lemmaNegatePosNegNat (S k) = Refl
+
+public export
+lemmaNegateNegNatPos : (k : Nat) -> negate (negNat k) = Pos k
+lemmaNegateNegNatPos Z = Refl
+lemmaNegateNegNatPos (S k) = Refl
 
 %hint
 public export
